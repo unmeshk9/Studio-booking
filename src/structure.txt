@@ -1,0 +1,9 @@
+src/
+  ├── assets/
+  ├── components/
+  ├── pages/
+  ├── services/
+  ├── hooks/
+  ├── utils/
+  ├── types/
+  └── styles/ 

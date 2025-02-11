@@ -1,0 +1,114 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  STUDIO
+  FREELANCER
+}
+
+enum SlotStatus {
+  AVAILABLE
+  REQUESTED
+  ASSIGNED
+  COMPLETED
+  CANCELLED
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  FAILED
+  REFUNDED
+}
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  password      String
+  role          UserRole
+  name          String
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  // Profile fields
+  bio           String?
+  phoneNumber   String?
+  address       String?
+  profileImage  String?
+
+  // Studio specific fields
+  studioName    String?   @map("studio_name")
+  location      String?
+  
+  // Freelancer specific fields
+  skills        String[]
+  hourlyRate    Float?    @map("hourly_rate")
+
+  // Relationships
+  createdSlots  Slot[]    @relation("CreatedBy")
+  bookedSlots   Slot[]    @relation("BookedBy")
+  reviews       Review[]
+  payments      Payment[]
+
+  @@map("users")
+}
+
+model Slot {
+  id            String       @id @default(cuid())
+  startTime     DateTime     @map("start_time")
+  endTime       DateTime     @map("end_time")
+  status        SlotStatus   @default(AVAILABLE)
+  price         Float
+  description   String?
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  // Relationships
+  createdBy     User         @relation("CreatedBy", fields: [createdById], references: [id])
+  createdById   String       @map("created_by_id")
+  bookedBy      User?        @relation("BookedBy", fields: [bookedById], references: [id])
+  bookedById    String?      @map("booked_by_id")
+  payment       Payment?
+  review        Review?
+
+  @@map("slots")
+}
+
+model Payment {
+  id            String         @id @default(cuid())
+  amount        Float
+  status        PaymentStatus  @default(PENDING)
+  stripeId      String?        @unique @map("stripe_id")
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  // Relationships
+  user          User           @relation(fields: [userId], references: [id])
+  userId        String         @map("user_id")
+  slot          Slot           @relation(fields: [slotId], references: [id])
+  slotId        String         @unique @map("slot_id")
+
+  @@map("payments")
+}
+
+model Review {
+  id            String    @id @default(cuid())
+  rating        Int       @default(0)
+  comment       String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  // Relationships
+  user          User      @relation(fields: [userId], references: [id])
+  userId        String    @map("user_id")
+  slot          Slot      @relation(fields: [slotId], references: [id])
+  slotId        String    @unique @map("slot_id")
+
+  @@map("reviews")
+} 
